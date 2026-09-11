@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff4c7">
+  <title>ティラノンのあそびば</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <section id="title-screen" class="screen active" aria-labelledby="title-heading">
+      <div class="hero-dino" aria-hidden="true">🦖</div>
+      <p class="eyebrow">ティラノンの</p>
+      <h1 id="title-heading">あそびば</h1>
+      <p class="lead">どっちで あそぶ？</p>
+      <button class="mode-card orange" data-open="sugoroku-screen">
+        <span class="mode-icon">🍖</span><span><b>もうひとくちだノン！</b><small>すごろくモード</small></span>
+      </button>
+      <button class="mode-card green" data-open="program-screen">
+        <span class="mode-icon">🤖</span><span><b>ティラノンをうごかそう！</b><small>プログラミングモード</small></span>
+      </button>
+    </section>
+
+    <section id="sugoroku-screen" class="screen" aria-labelledby="sugoroku-title">
+      <header><button class="back" data-title aria-label="タイトルへ">←</button><h2 id="sugoroku-title">もうひとくちだノン！</h2><span id="best-record" class="record">ベスト --</span></header>
+      <div id="sugoroku-board" class="sugoroku-board" aria-label="すごろく盤"></div>
+      <div class="status-card" aria-live="polite">
+        <span id="food-display" class="food">🍽️</span>
+        <div><b id="sugoroku-message">なにを たべるノン？</b><small id="turn-display">0かい たべた</small></div>
+      </div>
+      <div class="actions two"><button id="eat-button" class="primary">もうひとくち！</button><button id="finish-button" class="secondary">ごちそうさま！</button></div>
+    </section>
+
+    <section id="program-screen" class="screen" aria-labelledby="program-title">
+      <header><button class="back" data-title aria-label="タイトルへ">←</button><h2 id="program-title">ティラノンをうごかそう！</h2><span id="stage-label" class="record">1 / 3</span></header>
+      <p id="stage-mission" class="mission"></p>
+      <div id="program-board" class="program-board" aria-label="プログラミング盤"></div>
+      <div class="command-panel">
+        <div class="command-buttons">
+          <button data-command="forward">⬆️<span>すすむ</span></button>
+          <button data-command="right">↪️<span>みぎをむく</span></button>
+          <button data-command="left">↩️<span>ひだりをむく</span></button>
+        </div>
+        <div id="command-list" class="command-list" aria-live="polite"><span class="empty">めいれいを いれてね</span></div>
+        <button id="run-button" class="primary full">▶ うごかす！</button>
+        <div class="edit-buttons"><button id="undo-button">1個消す</button><button id="clear-button">全部消す</button><button id="retry-button">やりなおす</button></div>
+      </div>
+    </section>
+
+    <div id="result-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
+      <div class="modal-card"><div id="result-icon" class="result-icon">🎉</div><h2 id="result-title">ついたノン！</h2><p id="result-text"></p><button id="result-main" class="primary full">もう一回</button><button id="result-title-button" class="secondary full">タイトルへ</button></div>
+    </div>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
