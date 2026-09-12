@@ -10,13 +10,13 @@
   const BOARD = {
     start: "start", goal: "goal",
     nodes: {
-      start:{ x:0,y:3,label:"START",next:["a1"] }, a1:{x:1,y:3,special:"meat",next:["a2"]}, a2:{x:2,y:3,special:"pepper",next:["b1"]},
-      b1:{x:3,y:3,special:"branch",next:["u1","l1"],routes:["上の道","下の道"]}, u1:{x:3,y:2,special:"star",next:["u2"]}, u2:{x:4,y:2,special:"pepper",next:["r1"]},
-      l1:{x:3,y:4,special:"meat",next:["l2"]}, l2:{x:4,y:4,next:["l3"]}, l3:{x:5,y:4,special:"star",next:["l4"]}, l4:{x:5,y:3,special:"pepper",next:["r1"]},
-      r1:{x:5,y:2,next:["c1"]}, c1:{x:6,y:2,special:"pepper",next:["c2"]}, c2:{x:6,y:1,special:"meat",next:["b2"]},
-      b2:{x:5,y:1,special:"branch",next:["v1","w1"],routes:["上の道","下の道"]}, v1:{x:4,y:1,special:"pepper",next:["v2"]}, v2:{x:3,y:1,special:"star",next:["r2"]},
-      w1:{x:5,y:0,special:"meat",next:["w2"]}, w2:{x:4,y:0,special:"pepper",next:["w3"]}, w3:{x:3,y:0,special:"star",next:["w4"]}, w4:{x:2,y:0,special:"meat",next:["r2"]},
-      r2:{x:2,y:1,next:["d1"]}, d1:{x:1,y:1,special:"pepper",next:["d2"]}, d2:{x:0,y:1,special:"star",next:["goal"]}, goal:{x:0,y:0,label:"GOAL",special:"goal",next:[]}
+      start:{ x:0,y:3,label:"START",next:["a1"] }, a1:{x:1,y:3,next:["a2"]}, a2:{x:2,y:3,special:"meat",next:["b1"]},
+      b1:{x:3,y:3,special:"branch",next:["u1","l1"],routes:["⭐ 近道","🍖 より道"]}, u1:{x:3,y:2,special:"pepper",next:["u2"]}, u2:{x:4,y:2,special:"star",next:["r1"]},
+      l1:{x:3,y:4,special:"meat",next:["l2"]}, l2:{x:4,y:4,next:["l3"]}, l3:{x:5,y:4,special:"meat",next:["l4"]}, l4:{x:5,y:3,special:"star",next:["r1"]},
+      r1:{x:5,y:2,next:["c1"]}, c1:{x:6,y:2,special:"pepper",next:["c2"]}, c2:{x:6,y:1,next:["b2"]},
+      b2:{x:5,y:1,special:"branch",next:["v1","w1"],routes:["🛡️ 安全な道","⭐ 高得点の道"]}, v1:{x:4,y:1,next:["v2"]}, v2:{x:3,y:1,special:"meat",next:["r2"]},
+      w1:{x:5,y:0,special:"star",next:["w2"]}, w2:{x:4,y:0,special:"pepper",next:["w3"]}, w3:{x:3,y:0,special:"star",next:["w4"]}, w4:{x:2,y:0,special:"pepper",next:["r2"]},
+      r2:{x:2,y:1,next:["d1"]}, d1:{x:1,y:1,special:"meat",next:["d2"]}, d2:{x:0,y:1,special:"pepper",next:["goal"]}, goal:{x:0,y:0,label:"GOAL",special:"goal",next:[]}
     }
   };
   const SPECIALS = { meat:{icon:"🍖",points:1,name:"お肉"}, star:{icon:"⭐",points:3,name:"スター"}, pepper:{icon:"🫑",points:-2,name:"ピーマン"}, branch:{icon:"↔",points:0,name:"分岐"}, goal:{icon:"🏁",points:0,name:"GOAL"} };
