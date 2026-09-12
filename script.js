@@ -1,223 +1,73 @@
 (function () {
   "use strict";
 
-  const GOAL = 22;
+  const MAX_TURNS = 12;
+  const CARD_COUNTS = { 1: 4, 2: 4, 3: 4 };
   const STORAGE_KEYS = {
-    bestTurns: "tiranon-best-turns",
-    maxStreak: "tiranon-max-streak",
+    strategyBestScore: "tiranon-strategy-best-score",
     stageStars: "tiranon-stage-stars"
   };
-  // 100分率。ピーマンは18%で、あとからここだけで調整できます。
-  const FOODS = [
-    { id: "meat", name: "お肉", icon: "🍖", move: 1, weight: 25 },
-    { id: "sushi", name: "お寿司", icon: "🍣", move: 2, weight: 20 },
-    { id: "cake", name: "ケーキ", icon: "🍰", move: 2, weight: 20 },
-    { id: "ramen", name: "ラーメン", icon: "🍜", move: 3, weight: 17 },
-    { id: "pepper", name: "ピーマン", icon: "🫑", move: 0, weight: 18, burst: true }
-  ];
-  const COMMANDS = {
-    forward: { label: "すすむ", icon: "⬆️" }, right: { label: "みぎ", icon: "↪️" }, left: { label: "ひだり", icon: "↩️" }
+  const BOARD = {
+    start: "start", goal: "goal",
+    nodes: {
+      start:{ x:0,y:3,label:"START",next:["a1"] }, a1:{x:1,y:3,special:"meat",next:["a2"]}, a2:{x:2,y:3,special:"pepper",next:["b1"]},
+      b1:{x:3,y:3,special:"branch",next:["u1","l1"],routes:["上の道","下の道"]}, u1:{x:3,y:2,special:"star",next:["u2"]}, u2:{x:4,y:2,special:"pepper",next:["r1"]},
+      l1:{x:3,y:4,special:"meat",next:["l2"]}, l2:{x:4,y:4,next:["l3"]}, l3:{x:5,y:4,special:"star",next:["l4"]}, l4:{x:5,y:3,special:"pepper",next:["r1"]},
+      r1:{x:5,y:2,next:["c1"]}, c1:{x:6,y:2,special:"pepper",next:["c2"]}, c2:{x:6,y:1,special:"meat",next:["b2"]},
+      b2:{x:5,y:1,special:"branch",next:["v1","w1"],routes:["上の道","下の道"]}, v1:{x:4,y:1,special:"pepper",next:["v2"]}, v2:{x:3,y:1,special:"star",next:["r2"]},
+      w1:{x:5,y:0,special:"meat",next:["w2"]}, w2:{x:4,y:0,special:"pepper",next:["w3"]}, w3:{x:3,y:0,special:"star",next:["w4"]}, w4:{x:2,y:0,special:"meat",next:["r2"]},
+      r2:{x:2,y:1,next:["d1"]}, d1:{x:1,y:1,special:"pepper",next:["d2"]}, d2:{x:0,y:1,special:"star",next:["goal"]}, goal:{x:0,y:0,label:"GOAL",special:"goal",next:[]}
+    }
   };
-  const DIRECTIONS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+  const SPECIALS = { meat:{icon:"🍖",points:1,name:"お肉"}, star:{icon:"⭐",points:3,name:"スター"}, pepper:{icon:"🫑",points:-2,name:"ピーマン"}, branch:{icon:"↔",points:0,name:"分岐"}, goal:{icon:"🏁",points:0,name:"GOAL"} };
+  const COMMANDS = { forward:{label:"すすむ",icon:"⬆️"}, right:{label:"みぎ",icon:"↪️"}, left:{label:"ひだり",icon:"↩️"} };
+  const DIRECTIONS = [[0,-1],[1,0],[0,1],[-1,0]];
   const STAGES = [
-    { title: "まずは まっすぐ", mission: "まっすぐ GOALへ！", start:[0,4], goal:[0,0], direction:0, path:[[0,4],[0,3],[0,2],[0,1],[0,0]], optimal:4 },
-    { title: "みぎへ まがろう", mission: "みぎに まがって GOALへ！", start:[0,4], goal:[3,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2]], optimal:6 },
-    { title: "ジグザグみち", mission: "2かい まがろう！", start:[0,4], goal:[3,0], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2],[3,1],[3,0]], optimal:9 },
-    { title: "お肉を ゲット", mission: "お肉を とって GOALへ！", start:[0,4], goal:[4,0], meat:[2,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2],[4,2],[4,1],[4,0]], optimal:10 },
-    { title: "ピーマンを よけろ", mission: "🫑を よけて GOALへ！", start:[0,4], goal:[4,0], pepper:[2,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[1,1],[2,1],[3,1],[3,2],[4,2],[4,1],[4,0]], optimal:12 },
-    { title: "よくばりロード", mission: "遠回りして お肉をゲット！", start:[0,4], goal:[4,4], meat:[2,0], pepper:[3,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[2,1],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]], optimal:16 }
+    { title:"まずは まっすぐ", mission:"まっすぐ GOALへ！", start:[0,4], goal:[0,0], direction:0, path:[[0,4],[0,3],[0,2],[0,1],[0,0]], optimal:4 },
+    { title:"みぎへ まがろう", mission:"みぎに まがって GOALへ！", start:[0,4], goal:[3,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2]], optimal:6 },
+    { title:"ジグザグみち", mission:"2かい まがろう！", start:[0,4], goal:[3,0], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2],[3,1],[3,0]], optimal:9 },
+    { title:"お肉を ゲット", mission:"お肉を とって GOALへ！", start:[0,4], goal:[4,0], meat:[2,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[3,2],[4,2],[4,1],[4,0]], optimal:10 },
+    { title:"ピーマンを よけろ", mission:"🫑を よけて GOALへ！", start:[0,4], goal:[4,0], pepper:[2,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[1,1],[2,1],[3,1],[3,2],[4,2],[4,1],[4,0]], optimal:12 },
+    { title:"よくばりロード", mission:"遠回りして お肉をゲット！", start:[0,4], goal:[4,4], meat:[2,0], pepper:[3,2], direction:0, path:[[0,4],[0,3],[0,2],[1,2],[2,2],[2,1],[2,0],[3,0],[4,0],[4,1],[4,2],[4,3],[4,4]], optimal:16 }
   ];
 
   const Logic = {
-    chooseFood(randomValue) {
-      let cursor = randomValue * FOODS.reduce((sum, food) => sum + food.weight, 0);
-      return FOODS.find(food => (cursor -= food.weight) < 0) || FOODS[FOODS.length - 1];
-    },
-    bonusForStreak(streak) { return streak === 3 || streak === 5 ? 1 : 0; },
-    provisionalPosition(confirmed, pending) { return Math.min(GOAL, confirmed + pending); },
-    bank(state) {
-      const confirmed = Logic.provisionalPosition(state.confirmed, state.pending);
-      return { ...state, confirmed, pending: 0, streak: 0, turn: confirmed >= GOAL ? state.turn : state.turn + 1 };
-    },
-    burst(state) { return { ...state, pending: 0, streak: 0, turn: state.turn + 1 }; },
-    initialProgramState(stage) { return { x: stage.start[0], y: stage.start[1], direction: stage.direction, meat: false, failed: false }; },
-    stepProgram(state, command, stage) {
-      const next = { ...state };
-      if (command === "right") next.direction = (next.direction + 1) % 4;
-      if (command === "left") next.direction = (next.direction + 3) % 4;
-      if (command === "forward") {
-        const delta = DIRECTIONS[next.direction];
-        const target = [next.x + delta[0], next.y + delta[1]];
-        const onPath = stage.path.some(([x, y]) => x === target[0] && y === target[1]);
-        const onPepper = stage.pepper && target[0] === stage.pepper[0] && target[1] === stage.pepper[1];
-        if (!onPath || onPepper) return { ...next, failed: true };
-        [next.x, next.y] = target;
-        if (stage.meat && next.x === stage.meat[0] && next.y === stage.meat[1]) next.meat = true;
-      }
-      return next;
-    },
-    isStageClear(state, stage) { return state.x === stage.goal[0] && state.y === stage.goal[1] && (!stage.meat || state.meat); },
-    starsFor(commandCount, optimal) { return commandCount <= optimal ? 3 : commandCount <= optimal + 2 ? 2 : 1; }
+    cardDeck() { return Object.entries(CARD_COUNTS).flatMap(([value,count]) => Array(count).fill(Number(value))); },
+    shuffle(cards, random=Math.random) { const result=[...cards]; for(let i=result.length-1;i>0;i-=1){ const j=Math.floor(random()*(i+1)); [result[i],result[j]]=[result[j],result[i]]; } return result; },
+    initialStrategy(deck=Logic.cardDeck()) { return { position:BOARD.start, hand:[1,2,3], deck:[...deck], discard:[], turn:0, score:0, meat:0, star:0, pepper:0, status:"playing" }; },
+    drawCard(state, random=Math.random) { const next={...state,hand:[...state.hand],deck:[...state.deck],discard:[...state.discard]}; if(!next.deck.length){ next.deck=Logic.shuffle(next.discard,random); next.discard=[]; } if(next.deck.length) next.hand.push(next.deck.shift()); return next; },
+    useCard(state,index,random=Math.random) { const next={...state,hand:[...state.hand],discard:[...state.discard]}; next.discard.push(next.hand.splice(index,1)[0]); return Logic.drawCard(next,random); },
+    destinations(position,steps,board=BOARD) { if(position===board.goal || steps===0) return [position]; const node=board.nodes[position]; return [...new Set(node.next.flatMap(id=>Logic.destinations(id,steps-1,board)))]; },
+    applySpecial(state,node) { const next={...state}; const type=node.special; if(type==="meat"){next.score+=1;next.meat+=1;} if(type==="star"){next.score+=3;next.star+=1;} if(type==="pepper"){next.score=Math.max(0,next.score-2);next.pepper+=1;} return next; },
+    finishTurn(state,position,board=BOARD) { let next=Logic.applySpecial({...state,position},board.nodes[position]); next.turn+=1; next.status=position===board.goal?"clear":next.turn>=MAX_TURNS?"failed":"playing"; return next; },
+    initialProgramState(stage) { return { x:stage.start[0],y:stage.start[1],direction:stage.direction,meat:false,failed:false }; },
+    stepProgram(state,command,stage) { const next={...state}; if(command==="right")next.direction=(next.direction+1)%4; if(command==="left")next.direction=(next.direction+3)%4; if(command==="forward"){const d=DIRECTIONS[next.direction],target=[next.x+d[0],next.y+d[1]];const onPath=stage.path.some(([x,y])=>x===target[0]&&y===target[1]);const onPepper=stage.pepper&&target[0]===stage.pepper[0]&&target[1]===stage.pepper[1];if(!onPath||onPepper)return {...next,failed:true};[next.x,next.y]=target;if(stage.meat&&next.x===stage.meat[0]&&next.y===stage.meat[1])next.meat=true;} return next; },
+    isStageClear(state,stage) { return state.x===stage.goal[0]&&state.y===stage.goal[1]&&(!stage.meat||state.meat); },
+    starsFor(count,optimal) { return count<=optimal?3:count<=optimal+2?2:1; }
   };
 
-  if (typeof module !== "undefined") module.exports = { Logic, FOODS, STAGES, STORAGE_KEYS, GOAL };
-  if (typeof document === "undefined") return;
+  if(typeof module!=="undefined") module.exports={Logic,STAGES,STORAGE_KEYS,BOARD,CARD_COUNTS,MAX_TURNS};
+  if(typeof document==="undefined") return;
+  const $=id=>document.getElementById(id); const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const Storage={getNumber(key){try{return Number(localStorage.getItem(key))||0;}catch(_){return 0;}},getObject(key){try{return JSON.parse(localStorage.getItem(key)||"{}");}catch(_){return {};}},set(key,value){try{localStorage.setItem(key,typeof value==="object"?JSON.stringify(value):String(value));}catch(_){}}};
+  let sugoroku, replayDeck=[]; let program={stageIndex:0,commands:[],state:null,running:false,activeCommand:-1};
+  function showScreen(id){document.querySelectorAll(".screen").forEach(screen=>screen.classList.toggle("active",screen.id===id));closeResult();window.scrollTo(0,0);}
+  document.querySelectorAll("[data-title]").forEach(button=>button.addEventListener("click",()=>showScreen("title-screen")));
+  document.querySelectorAll("[data-open]").forEach(button=>button.addEventListener("click",()=>{const target=button.dataset.open;showScreen(target);if(target==="sugoroku-screen")resetSugoroku(false);if(target==="stage-screen")renderStageSelect();}));
 
-  const $ = id => document.getElementById(id);
-  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
-  const Storage = {
-    getNumber(key) { try { return Number(localStorage.getItem(key)) || 0; } catch (_) { return 0; } },
-    getObject(key) { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (_) { return {}; } },
-    set(key, value) { try { localStorage.setItem(key, typeof value === "object" ? JSON.stringify(value) : String(value)); } catch (_) { /* private storage can be unavailable */ } }
-  };
-  let sugoroku;
-  let program = { stageIndex: 0, commands: [], state: null, running: false, activeCommand: -1 };
-
-  function showScreen(id) {
-    document.querySelectorAll(".screen").forEach(screen => screen.classList.toggle("active", screen.id === id));
-    closeResult();
-    window.scrollTo(0, 0);
+  function resetSugoroku(sameOrder=false){ if(!sameOrder||!replayDeck.length) replayDeck=Logic.shuffle(Logic.cardDeck()); sugoroku={...Logic.initialStrategy(replayDeck),selected:null,locked:false}; $("sugoroku-message").textContent="カードを選ぶと 到着マスが光るよ！"; renderSugoroku(); }
+  function renderSugoroku(){
+    const board=$("sugoroku-board");board.innerHTML=""; const previews=sugoroku.selected===null?[]:Logic.destinations(sugoroku.position,sugoroku.hand[sugoroku.selected]);
+    Object.entries(BOARD.nodes).forEach(([id,node])=>{const tile=document.createElement("div");tile.className=`path-tile${id===sugoroku.position?" current":""}${previews.includes(id)?" preview":""}`;tile.style.gridColumn=node.x+1;tile.style.gridRow=node.y+1;tile.dataset.node=id;const special=SPECIALS[node.special];tile.innerHTML=node.label?`<small>${node.label}</small>${special?`<span>${special.icon}</span>`:""}`:(special?`<span>${special.icon}</span>`:"<i>•</i>");if(id===sugoroku.position){const pawn=document.createElement("span");pawn.className="pawn game-piece";pawn.textContent="🦖";tile.append(pawn);}board.append(tile);});
+    $("score-label").textContent=sugoroku.score;$("turn-label").textContent=MAX_TURNS-sugoroku.turn;$("position-label").textContent=`現在 ${BOARD.nodes[sugoroku.position].label||sugoroku.position.toUpperCase()}`;const best=Storage.getNumber(STORAGE_KEYS.strategyBestScore);$("sugoroku-records").innerHTML=`BEST <b>${best}点</b>`;
+    $("card-hand").innerHTML=sugoroku.hand.map((value,index)=>`<button class="move-card${index===sugoroku.selected?" selected":""}" data-card="${index}" ${sugoroku.locked?"disabled":""}><small>すすむ</small><b>+${value}</b><span>${index===sugoroku.selected?(previews.length>1?"分岐あり":`→ ${previews[0]===BOARD.goal?"GOAL":previews[0].toUpperCase()}`):"到着を見る"}</span></button>`).join("");
+    document.querySelectorAll("[data-card]").forEach(button=>button.addEventListener("click",()=>{if(sugoroku.locked)return;sugoroku.selected=Number(button.dataset.card);$("sugoroku-message").textContent=Logic.destinations(sugoroku.position,sugoroku.hand[sugoroku.selected]).length>1?"途中に分岐あり。進むと道を選べるよ":"光ったマスに止まるよ";renderSugoroku();}));
+    $("move-button").disabled=sugoroku.locked||sugoroku.selected===null;$("move-button").textContent=sugoroku.selected===null?"カードを選んでね":`+${sugoroku.hand[sugoroku.selected]} で進む！`;
   }
-  document.querySelectorAll("[data-title]").forEach(button => button.addEventListener("click", () => showScreen("title-screen")));
-  document.querySelectorAll("[data-open]").forEach(button => button.addEventListener("click", () => {
-    const target = button.dataset.open;
-    showScreen(target);
-    if (target === "sugoroku-screen") resetSugoroku();
-    if (target === "stage-screen") renderStageSelect();
-  }));
-
-  function resetSugoroku() {
-    sugoroku = { confirmed: 0, pending: 0, streak: 0, maxStreak: 0, turn: 1, locked: false, lastFood: null, effect: "" };
-    $("food-display").textContent = "🍽️";
-    $("sugoroku-message").textContent = "まずは ひとくち！";
-    renderSugoroku();
-  }
-  function pathGrid(index) {
-    const row = 4 - Math.floor(index / 5);
-    const offset = index % 5;
-    return [row % 2 === 0 ? 4 - offset : offset, row];
-  }
-  function renderSugoroku() {
-    const board = $("sugoroku-board");
-    board.innerHTML = "";
-    const provisional = Logic.provisionalPosition(sugoroku.confirmed, sugoroku.pending);
-    for (let index = 0; index <= GOAL; index += 1) {
-      const [x, y] = pathGrid(index);
-      const tile = document.createElement("div");
-      tile.className = "path-tile";
-      tile.style.gridColumn = x + 1;
-      tile.style.gridRow = y + 1;
-      tile.dataset.step = index;
-      if (index === 0) { tile.classList.add("start"); tile.innerHTML = "<small>START</small>"; }
-      else if (index === GOAL) { tile.classList.add("goal"); tile.innerHTML = "<small>GOAL</small><span>🏁</span>"; }
-      else if (index % 4 === 0) tile.textContent = "•";
-      if (index === sugoroku.confirmed) {
-        const marker = document.createElement("span"); marker.className = `confirmed-marker${sugoroku.effect === "bank" ? " flash" : ""}`; marker.textContent = "⭐"; marker.title = "確定位置"; tile.append(marker);
-      }
-      if (index === provisional) {
-        const pawn = document.createElement("span"); pawn.className = `pawn game-piece${sugoroku.effect === "hop" ? " hop" : ""}`; pawn.textContent = "🦖"; pawn.title = "いまの位置"; tile.append(pawn);
-      }
-      board.append(tile);
-    }
-    const best = Storage.getNumber(STORAGE_KEYS.bestTurns);
-    const max = Storage.getNumber(STORAGE_KEYS.maxStreak);
-    $("sugoroku-records").innerHTML = `<span>BEST <b>${best || "--"}ターン</b></span><span>MAX <b>${max || "--"}パク</b></span>`;
-    $("pending-label").textContent = `+${sugoroku.pending}`;
-    $("turn-label").textContent = `${sugoroku.turn}ターンめ`;
-    $("bank-button").disabled = sugoroku.pending === 0 || sugoroku.locked;
-    $("bank-button").querySelector("small").textContent = `+${sugoroku.pending}マスを確定`;
-    $("eat-button").disabled = sugoroku.locked;
-    $("streak-label").textContent = streakMessage(sugoroku.streak);
-  }
-  function streakMessage(streak) {
-    if (streak >= 7) return `🔥 ${streak}連続！ 止まらないノン！`;
-    if (streak >= 5) return `🔥 ${streak}連続！ まだいけるノン！`;
-    if (streak >= 3) return `🔥 ${streak}連続！ パクパク！`;
-    return streak ? `🔥 ${streak}連続！ あと${3 - streak}回でボーナス` : "3連続と5連続で +1ボーナス！";
-  }
-  async function animateSugoroku(from, to) {
-    const direction = Math.sign(to - from);
-    let position = from;
-    const startingTile = $("sugoroku-board").querySelector(`[data-step="${from}"]`);
-    const movingPawn = $("sugoroku-board").querySelector(".pawn");
-    if (startingTile && movingPawn) startingTile.append(movingPawn);
-    while (position !== to) {
-      position += direction;
-      const pawn = $("sugoroku-board").querySelector(".pawn");
-      const destination = $("sugoroku-board").querySelector(`[data-step="${position}"]`);
-      if (pawn && destination) destination.append(pawn);
-      pawn?.classList.remove("hop");
-      void pawn?.offsetWidth;
-      pawn?.classList.add("hop");
-      await wait(115);
-    }
-  }
-  async function eat() {
-    if (sugoroku.locked) return;
-    sugoroku.locked = true;
-    renderSugoroku();
-    const food = Logic.chooseFood(Math.random());
-    sugoroku.lastFood = food.id;
-    $("food-display").textContent = food.icon;
-    if (food.burst) {
-      const from = Logic.provisionalPosition(sugoroku.confirmed, sugoroku.pending);
-      $("sugoroku-message").textContent = "ピーマンだノーーーン！";
-      $("sugoroku-status").classList.add("burst");
-      await wait(420);
-      sugoroku = { ...Logic.burst(sugoroku), locked: true, effect: "" };
-      renderSugoroku();
-      await animateSugoroku(from, sugoroku.confirmed);
-      await wait(250);
-      $("sugoroku-status").classList.remove("burst");
-      $("sugoroku-message").textContent = "今回の分が パー！ つぎこそ！";
-      sugoroku.locked = false;
-      renderSugoroku();
-      return;
-    }
-    const from = Logic.provisionalPosition(sugoroku.confirmed, sugoroku.pending);
-    sugoroku.streak += 1;
-    sugoroku.maxStreak = Math.max(sugoroku.maxStreak, sugoroku.streak);
-    const bonus = Logic.bonusForStreak(sugoroku.streak);
-    sugoroku.pending += food.move + bonus;
-    sugoroku.effect = "hop";
-    $("sugoroku-message").textContent = bonus ? `${food.name}！ ボーナス +1！` : `${food.name}を パクッ！`;
-    renderSugoroku();
-    await animateSugoroku(from, Logic.provisionalPosition(sugoroku.confirmed, sugoroku.pending));
-    sugoroku.effect = "";
-    sugoroku.locked = false;
-    renderSugoroku();
-    saveMaxStreak();
-    if (Logic.provisionalPosition(sugoroku.confirmed, sugoroku.pending) >= GOAL) finishSugoroku();
-  }
-  async function bankSugoroku() {
-    if (sugoroku.locked || sugoroku.pending === 0) return;
-    sugoroku.locked = true;
-    $("sugoroku-message").textContent = "ここまで確定！";
-    sugoroku = { ...Logic.bank(sugoroku), locked: true, effect: "bank" };
-    saveMaxStreak();
-    renderSugoroku();
-    await wait(500);
-    sugoroku.locked = false;
-    sugoroku.effect = "";
-    $("food-display").textContent = "🍽️";
-    $("sugoroku-message").textContent = "つぎのターン！";
-    renderSugoroku();
-  }
-  function saveMaxStreak() {
-    if (sugoroku.maxStreak > Storage.getNumber(STORAGE_KEYS.maxStreak)) Storage.set(STORAGE_KEYS.maxStreak, sugoroku.maxStreak);
-  }
-  function finishSugoroku() {
-    sugoroku.confirmed = GOAL;
-    saveMaxStreak();
-    const best = Storage.getNumber(STORAGE_KEYS.bestTurns);
-    const isRecord = !best || sugoroku.turn < best;
-    if (isRecord) Storage.set(STORAGE_KEYS.bestTurns, sugoroku.turn);
-    renderSugoroku();
-    showResult({ icon: "🏆", title: "ついたノーーン！", stars: "🎉 🎊 🎉", text: `${sugoroku.turn}ターンでゴール！${isRecord ? "\nNEW RECORD！" : ""}`, main: "もう一回！", onMain: resetSugoroku, sub: "タイトルへ", onSub: () => showScreen("title-screen"), celebrate: true });
-  }
-  $("eat-button").addEventListener("click", eat);
-  $("bank-button").addEventListener("click", bankSugoroku);
-
+  function chooseBranch(node){return new Promise(resolve=>{sugoroku.locked=true;renderSugoroku();$("branch-choice").hidden=false;$("branch-options").innerHTML=node.next.map((id,i)=>`<button data-route="${i}">${node.routes[i]}</button>`).join("");$("branch-options").querySelectorAll("button").forEach(button=>button.onclick=()=>{$("branch-choice").hidden=true;resolve(node.next[Number(button.dataset.route)]);});});}
+  async function moveSugoroku(){if(sugoroku.locked||sugoroku.selected===null)return;sugoroku.locked=true;const index=sugoroku.selected,steps=sugoroku.hand[index];sugoroku=Logic.useCard(sugoroku,index);sugoroku.selected=null;renderSugoroku();let position=sugoroku.position;for(let step=0;step<steps&&position!==BOARD.goal;step+=1){const node=BOARD.nodes[position];const next=node.next.length>1?await chooseBranch(node):node.next[0];position=next;sugoroku.position=position;renderSugoroku();await wait(180);}sugoroku=Logic.finishTurn(sugoroku,position);sugoroku.locked=true;renderSugoroku();if(sugoroku.status!=="playing")return finishSugoroku();const special=SPECIALS[BOARD.nodes[position].special];$("sugoroku-message").textContent=special&&special.points?`${special.icon} ${special.name}！ ${special.points>0?"+":""}${special.points}点`:`${steps}マス進んだよ。次のカードは？`;sugoroku.locked=false;renderSugoroku();}
+  function finishSugoroku(){const clear=sugoroku.status==="clear";if(clear&&sugoroku.score>Storage.getNumber(STORAGE_KEYS.strategyBestScore))Storage.set(STORAGE_KEYS.strategyBestScore,sugoroku.score);showResult({icon:clear?"🏆":"⌛",title:clear?"ゴールだノン！":"時間切れだノン",stars:clear?`${sugoroku.score}点`:"",text:`最終得点 ${sugoroku.score}点\n🍖 お肉 ${sugoroku.meat}個　⭐ スター ${sugoroku.star}個\n🫑 ピーマン ${sugoroku.pepper}回`,main:"同じカード順でもう一回",onMain:()=>resetSugoroku(true),sub:"新しいカード順でもう一回",onSub:()=>resetSugoroku(false),celebrate:clear});}
+  $("move-button").addEventListener("click",moveSugoroku);
   function getStageStars() { return Storage.getObject(STORAGE_KEYS.stageStars); }
   function renderStageSelect() {
     const scores = getStageStars();
