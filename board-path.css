@@ -1,0 +1,63 @@
+/* Strategy board readability layer: keeps game rules unchanged. */
+#sugoroku-board::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 500' preserveAspectRatio='none'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M50 350 L150 350 L250 350 L350 350' stroke='%23fff4c7' stroke-width='28'/%3E%3Cpath d='M350 350 L350 250 L450 250 L550 250 L650 250 L650 150 L550 150' stroke='%23fff4c7' stroke-width='28'/%3E%3Cpath d='M350 350 L350 450 L450 450 L550 450 L550 350 L550 250' stroke='%23fff4c7' stroke-width='28'/%3E%3Cpath d='M550 150 L450 150 L350 150 L250 150 L150 150 L50 150 L50 50' stroke='%23fff4c7' stroke-width='28'/%3E%3Cpath d='M550 150 L550 50 L450 50 L350 50 L250 50 L250 150' stroke='%23fff4c7' stroke-width='28'/%3E%3Cpath d='M50 350 L150 350 L250 350 L350 350' stroke='%23d59b43' stroke-width='7'/%3E%3Cpath d='M350 350 L350 250 L450 250 L550 250 L650 250 L650 150 L550 150' stroke='%23d59b43' stroke-width='7'/%3E%3Cpath d='M350 350 L350 450 L450 450 L550 450 L550 350 L550 250' stroke='%23d59b43' stroke-width='7'/%3E%3Cpath d='M550 150 L450 150 L350 150 L250 150 L150 150 L50 150 L50 50' stroke='%23d59b43' stroke-width='7'/%3E%3Cpath d='M550 150 L550 50 L450 50 L350 50 L250 50 L250 150' stroke='%23d59b43' stroke-width='7'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+#sugoroku-board .path-tile {
+  z-index: 1;
+}
+
+#sugoroku-board .path-tile[data-node="b1"],
+#sugoroku-board .path-tile[data-node="b2"] {
+  border-radius: 13px;
+  border-color: #4b8fca;
+  background: linear-gradient(145deg, #e5f4ff, #a8d7f5);
+  box-shadow: 0 3px 0 #3f79a7;
+}
+
+#sugoroku-board .path-tile[data-node="b1"]::after,
+#sugoroku-board .path-tile[data-node="b2"]::after {
+  content: "分岐";
+  position: absolute;
+  left: 50%;
+  bottom: -15px;
+  transform: translateX(-50%);
+  padding: 1px 5px;
+  border-radius: 7px;
+  background: #fff;
+  color: #3977a7;
+  font-size: .42rem;
+  font-weight: 1000;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px #49341f33;
+}
+
+#sugoroku-board .path-tile.current {
+  outline-width: 4px;
+  outline-offset: 2px;
+}
+
+#sugoroku-board .path-tile.preview {
+  outline-width: 5px;
+  outline-offset: 2px;
+}
+
+.route-help {
+  margin: -1px 0 6px;
+  text-align: center;
+  color: #6d5637;
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.route-help b {
+  color: #3c7c45;
+}
