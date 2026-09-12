@@ -15,7 +15,7 @@
       <h1 id="title-heading">あそびば</h1>
       <p class="lead">どっちで あそぶ？</p>
       <button class="mode-card food-mode" data-open="sugoroku-screen">
-        <span class="mode-icon">🍖</span><span><b>もうひとくちだノン！</b><small>食べる？ やめる？ ドキドキすごろく</small></span><span class="chevron">›</span>
+        <span class="mode-icon">🃏</span><span><b>えらんで進む！すごろく</b><small>3枚のカードで 高得点をねらおう</small></span><span class="chevron">›</span>
       </button>
       <button class="mode-card code-mode" data-open="stage-screen">
         <span class="mode-icon">⬆️</span><span><b>ティラノンをうごかそう！</b><small>めいれいを ならべて GOALへ</small></span><span class="chevron">›</span>
@@ -23,18 +23,15 @@
     </section>
 
     <section id="sugoroku-screen" class="screen" aria-labelledby="sugoroku-title">
-      <header class="game-header"><button class="icon-button" data-title aria-label="タイトルへ">‹</button><div><span class="header-kicker">ドキドキすごろく</span><h2 id="sugoroku-title">もうひとくちだノン！</h2></div><div id="sugoroku-records" class="mini-record"></div></header>
+      <header class="game-header"><button class="icon-button" data-title aria-label="タイトルへ">‹</button><div><span class="header-kicker">戦略すごろく v0.2</span><h2 id="sugoroku-title">えらんで進む！</h2></div><div id="sugoroku-records" class="mini-record"></div></header>
+      <div class="strategy-hud"><b>⭐ <span id="score-label">0</span>点</b><b>⏳ あと<span id="turn-label">12</span>ターン</b><span id="position-label">現在 START</span></div>
       <div id="sugoroku-board" class="sugoroku-board" aria-label="STARTからGOALまでのすごろく盤"></div>
-      <section id="sugoroku-status" class="sugoroku-status" aria-live="polite">
-        <div id="food-display" class="food-display">🍽️</div>
-        <div class="speech"><b id="sugoroku-message">まずは ひとくち！</b><span id="turn-label">1ターンめ</span></div>
-        <div class="risk"><small>今回のパクパク</small><strong id="pending-label">+0</strong><small>マス</small></div>
+      <section class="strategy-panel" aria-live="polite">
+        <div id="sugoroku-message" class="strategy-message">カードを選ぶと 到着マスが光るよ！</div>
+        <div id="card-hand" class="card-hand" aria-label="移動カード"></div>
+        <button id="move-button" class="primary move-button" disabled>カードを選んでね</button>
       </section>
-      <div id="streak-label" class="streak-label">あと3回で ボーナス！</div>
-      <div class="sugoroku-actions">
-        <button id="eat-button" class="primary eat-button"><span>🍴</span>もうひとくち！<small>ピーマンなら今回の分がパー！</small></button>
-        <button id="bank-button" class="bank-button" disabled>⭐ ここで ごちそうさま！<small>+0マスを確定</small></button>
-      </div>
+      <div id="branch-choice" class="branch-choice" hidden><div><b>↔ どっちへいく？</b><span id="branch-options"></span></div></div>
     </section>
 
     <section id="stage-screen" class="screen" aria-labelledby="stage-title">

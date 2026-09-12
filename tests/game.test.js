@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { Logic, FOODS, STAGES, GOAL } = require("../script.js");
+const { Logic, STAGES, BOARD, CARD_COUNTS, MAX_TURNS, STORAGE_KEYS } = require("../script.js");
 
 function shortestSolution(stage) {
   const queue = [{ state: Logic.initialProgramState(stage), commands: [] }];
@@ -20,30 +20,91 @@ function shortestSolution(stage) {
   return null;
 }
 
-test("food weights total 100 and pepper probability is 18%", () => {
-  assert.equal(FOODS.reduce((sum, food) => sum + food.weight, 0), 100);
-  assert.equal(FOODS.find(food => food.burst).weight, 18);
-  assert.equal(Logic.chooseFood(0).id, "meat");
-  assert.equal(Logic.chooseFood(0.99).id, "pepper");
+function walk(position, steps, choices = []) {
+  let choice = 0;
+  while (steps > 0 && position !== BOARD.goal) {
+    const next = BOARD.nodes[position].next;
+    position = next.length > 1 ? next[choices[choice++] || 0] : next[0];
+    steps -= 1;
+  }
+  return position;
+}
+
+test("initial hand is fixed at +1, +2, +3", () => {
+  assert.deepEqual(Logic.initialStrategy([3, 2, 1]).hand, [1, 2, 3]);
+  assert.deepEqual(CARD_COUNTS, { 1: 4, 2: 4, 3: 4 });
 });
 
-test("bank confirms only this turn's pending movement", () => {
-  const state = Logic.bank({ confirmed: 5, pending: 6, streak: 3, turn: 2 });
-  assert.deepEqual(state, { confirmed: 11, pending: 0, streak: 0, turn: 3 });
+test("using a card draws exactly one and keeps the other two", () => {
+  const state = Logic.initialStrategy([3, 1]);
+  const next = Logic.useCard(state, 1);
+  assert.deepEqual(next.hand, [1, 3, 3]);
+  assert.deepEqual(next.discard, [2]);
+  assert.equal(next.hand.length, 3);
 });
 
-test("pepper loses pending movement but never confirmed movement", () => {
-  const state = Logic.burst({ confirmed: 5, pending: 6, streak: 3, turn: 2 });
-  assert.deepEqual(state, { confirmed: 5, pending: 0, streak: 0, turn: 3 });
+test("meat stop scores +1 and star stop scores +3", () => {
+  let state = Logic.initialStrategy([]);
+  state = Logic.finishTurn(state, "a1");
+  assert.equal(state.score, 1);
+  state = Logic.finishTurn(state, "u1");
+  assert.equal(state.score, 4);
+  assert.deepEqual([state.meat, state.star], [1, 1]);
 });
 
-test("movement reaches GOAL without requiring an exact number", () => {
-  assert.equal(Logic.provisionalPosition(21, 3), GOAL);
-  assert.equal(Logic.bank({ confirmed: 21, pending: 3, streak: 1, turn: 4 }).turn, 4);
+test("pepper stop scores -2 but score never goes below zero", () => {
+  let state = { ...Logic.initialStrategy([]), score: 3 };
+  state = Logic.finishTurn(state, "a2");
+  assert.equal(state.score, 1);
+  state = Logic.finishTurn({ ...state, score: 1 }, "a2");
+  assert.equal(state.score, 0);
+  assert.equal(state.pepper, 2);
 });
 
-test("streak bonus is simple and limited to milestones", () => {
-  assert.deepEqual([1, 2, 3, 4, 5, 6].map(Logic.bonusForStreak), [0, 0, 1, 0, 1, 0]);
+test("special squares passed over do not activate", () => {
+  const destination = walk("start", 3);
+  const state = Logic.finishTurn(Logic.initialStrategy([]), destination);
+  assert.equal(destination, "b1");
+  assert.deepEqual([state.score, state.meat, state.pepper], [0, 0, 0]);
+});
+
+test("passing GOAL completes without an exact roll", () => {
+  const destination = walk("d2", 3);
+  const state = Logic.finishTurn(Logic.initialStrategy([]), destination);
+  assert.equal(destination, BOARD.goal);
+  assert.equal(state.status, "clear");
+});
+
+test("turn 12 fails when GOAL was not reached and never exceeds limit", () => {
+  const state = Logic.finishTurn({ ...Logic.initialStrategy([]), turn: MAX_TURNS - 1 }, "a1");
+  assert.equal(state.turn, 12);
+  assert.equal(state.status, "failed");
+});
+
+test("the same deck gives the same replenishment sequence", () => {
+  const deck = [3, 1, 2, 2];
+  let first = Logic.initialStrategy(deck), second = Logic.initialStrategy(deck);
+  const draws = state => { const result=[]; for(let i=0;i<4;i+=1){state=Logic.useCard(state,0,()=>0);result.push(state.hand.at(-1));} return result; };
+  assert.deepEqual(draws(first), draws(second));
+});
+
+test("discard pile reshuffles when the deck is exhausted", () => {
+  let state = Logic.initialStrategy([2]);
+  state = Logic.useCard(state, 0, () => 0);
+  state = Logic.useCard(state, 0, () => 0);
+  assert.equal(state.hand.length, 3);
+  assert.equal(state.deck.length + state.discard.length, 1);
+});
+
+test("branch route changes the stopping position", () => {
+  assert.deepEqual(Logic.destinations("b1", 2).sort(), ["l2", "u2"]);
+  assert.equal(walk("b1", 2, [0]), "u2");
+  assert.equal(walk("b1", 2, [1]), "l2");
+});
+
+test("strategy score uses a separate localStorage key", () => {
+  assert.equal(STORAGE_KEYS.strategyBestScore, "tiranon-strategy-best-score");
+  assert.equal(STORAGE_KEYS.stageStars, "tiranon-stage-stars");
 });
 
 test("all stages are solvable and declared optimal counts are exact", () => {
