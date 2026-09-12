@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#fff3c4">
   <title>ティラノンのあそびば</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="board-path.css">
 </head>
 <body>
   <main class="app">
@@ -25,6 +26,7 @@
     <section id="sugoroku-screen" class="screen" aria-labelledby="sugoroku-title">
       <header class="game-header"><button class="icon-button" data-title aria-label="タイトルへ">‹</button><div><span class="header-kicker">戦略すごろく v0.2</span><h2 id="sugoroku-title">えらんで進む！</h2></div><div id="sugoroku-records" class="mini-record"></div></header>
       <div class="strategy-hud"><b>⭐ <span id="score-label">0</span>点</b><b>⏳ あと<span id="turn-label">12</span>ターン</b><span id="position-label">現在 START</span></div>
+      <div class="route-help"><b>太い道</b>をたどってGOALへ。青いマスが分岐！</div>
       <div id="sugoroku-board" class="sugoroku-board" aria-label="STARTからGOALまでのすごろく盤"></div>
       <section class="strategy-panel" aria-live="polite">
         <div id="sugoroku-message" class="strategy-message">カードを選ぶと 到着マスが光るよ！</div>
